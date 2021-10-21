@@ -8,10 +8,7 @@ import matplotlib.pyplot as plt
 OUTPUTS = 10
 
 def sigmoid(z):
-    try:
-        return 1/( 1 + np.exp(-z) )
-    except:
-        print (z, " ", round(z,10))
+    return 1/( 1 + np.exp(-z) )
 
 def sum_jth_weight_for_all_k(weights, output_error):
     """
@@ -99,7 +96,7 @@ def run_experiment(
 
             accuracy_vec.append((epoch, accuracy_train))
             count=0
-            print (count)
+            
             for train_y_vec, x_vec in zip(train_y_nn, train_x):
         
                 
