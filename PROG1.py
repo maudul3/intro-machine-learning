@@ -16,7 +16,7 @@ def confusion_matrix(t, y):
 
     confusion = np.zeros((10,10))
 
-    for y_val, t_val in zip(y, t):
+    for t_val, y_val in zip(t, y):
         confusion[t_val][y_val] += 1
 
     return confusion
@@ -24,18 +24,19 @@ def confusion_matrix(t, y):
 def run_experiment(
     train_x, test_x, train_y_bin, test_y_bin, learning_rate, momentum, hidden_units
     ):
-        train_y_nn = np.array(
+        train_y_nn = train_y_bin
+        '''np.array(
         [
             [ 0.9 if val == 1 else 0.1 for val in row ] 
             for row in train_y_bin
         ]
-        )
+    )'''
 
     # Initialize weights vector for each output
         # Index 
         epoch = 0
 
-        # Initialize weights
+        # Initialize weights for inpu
         IL_to_HL_weights = np.array(
             [
                 [ uniform(-0.05, 0.05) for _ in range(785) ] 
@@ -57,9 +58,9 @@ def run_experiment(
         previous_IL_to_HL_weight_delta = np.zeros((hidden_units, 785))
 
         '''Training the neural network'''
-        while (epoch <= 10):
+        while (epoch <= 5):
             #np.random.shuffle(train)
-            # Preditction matrix obtained by matrix multiplication of training set (60k x 785) with weights (785, 10) to get 60k binary vectors
+            # Prediction matrix obtained by matrix multiplication of training set (60k x 785) with weights (785, 10) to get 60k binary vectors
             train_hidden_layer = sigmoid(np.matmul(train_x, IL_to_HL_weights.T))
             train_hidden_layer = np.insert(train_hidden_layer, 0, 1, axis=1)
             
@@ -100,7 +101,7 @@ def run_experiment(
             accuracy_test = test_current_predictions / test_y_bin.shape[0]
             print ("Epoch {} Accuracy for Test: {}".format(epoch, accuracy_test ))
 
-            accuracy_vector.append((epoch, accuracy_train))
+            accuracy_vector.append((epoch, accuracy_train, accuracy_test))
             
             for train_y_vec, train_x_vec in zip(train_y_nn, train_x):
                 '''Forward Propagate'''
@@ -137,10 +138,15 @@ def run_experiment(
                 previous_IL_to_HL_weight_delta = IL_to_HL_weight_delta
             
             epoch += 1
+        '''Training Ends'''
 
+        '''Save Confusion Matrix'''
         np.savetxt(
-            "ConfusionMatrixForLearningRate{}_{}.csv".format(
-                learning_rate, datetime.datetime.now().strftime("%m_%d_%Y_%H%M")
+            "~/Desktop/ConfusionMatrixForLearningRate{}_Momentum{}_HiddenUnits{}_{}.csv".format(
+                learning_rate, 
+                momentum,
+                hidden_units,
+                datetime.datetime.now().strftime("%m_%d_%Y_%H%M")
             ), 
             confusion_matrix(test_y_bin, test_prediction_matrix), 
             delimiter=","
@@ -151,13 +157,13 @@ def run_experiment(
         training_accuracies = [v[1] for v in accuracy_vector]
         test_accuracies = [v[2] for v in accuracy_vector]
 
-        plt.plot(epochs, training_accuracies, label="train")
-        plt.plot(epochs, test_accuracies, label="test")
+        plt.plot(epochs, training_accuracies, label="Train")
+        plt.plot(epochs, test_accuracies, label="Test")
         plt.xlabel("Epoch")
         plt.ylabel("Accuracy")
-        plt.title("Neural network with learning rate = {}".format(learning_rate))
+        plt.title("Neural network with Momentum = {} and Hidden Units = {}".format(momentum, hidden_units))
         plt.legend()
-        plt.savefig('NNWithLearningRate{}_Momentum{}_HiddenUnits{}_{}.png'.format(
+        plt.savefig('~/Desktop/NNWithLearningRate{}_Momentum{}_HiddenUnits{}_{}.png'.format(
             learning_rate, 
             momentum,
             hidden_units,
@@ -195,12 +201,11 @@ if __name__ == '__main__':
     )
 
     # Initialize eta vector
-    learning_rates = [0.001, 0.01, 0.1]
     momentums = [0, 0.25, 0.5]
-    hidden_units = [50, 20, 100]
+    hidden_units = [20, 50, 100]
 
     for h in hidden_units:
-        print ("Starting experiment for : ", h)
+        print ("Starting experiment for hidden units: ", h)
         run_experiment(
             train_x,
             test_x,
@@ -212,7 +217,7 @@ if __name__ == '__main__':
         )
 
     for m in momentums:
-        print ("Starting experiment for : ", h)
+        print ("Starting experiment for momentum: ", m)
         run_experiment(
             train_x,
             test_x,
