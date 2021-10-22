@@ -10,6 +10,17 @@ OUTPUTS = 10
 def sigmoid(z):
     return 1/( 1 + np.exp(-z) )
 
+def confusion_matrix(t, y):
+    y = [np.max(np.where(row == 1), initial = -1) for row in y]
+    t = [np.max(np.where(row == 1), initial = -1) for row in t]
+
+    confusion = np.zeros((10,10))
+
+    for y_val, t_val in zip(y, t):
+        confusion[t_val][y_val] += 1
+
+    return confusion
+
 def run_experiment(
     train_x, test_x, train_y_bin, test_y_bin, learning_rate, momentum, hidden_units
     ):
@@ -20,12 +31,6 @@ def run_experiment(
         ]
         )
 
-        test_y_nn = np.array(
-        [
-           [ 0.9 if val == 1 else 0.1 for val in row ] 
-            for row in test_y_bin
-        ]
-    )
     # Initialize weights vector for each output
         # Index 
         epoch = 0
@@ -47,19 +52,19 @@ def run_experiment(
         )
 
         # Initialize weights and accuracy vector
-        accuracy_vec = []
+        accuracy_vector = []
         previous_HL_to_OL_weight_delta = np.zeros((OUTPUTS, hidden_units + 1))
         previous_IL_to_HL_weight_delta = np.zeros((hidden_units, 785))
 
+        '''Training the neural network'''
         while (epoch <= 10):
-            
+            #np.random.shuffle(train)
             # Preditction matrix obtained by matrix multiplication of training set (60k x 785) with weights (785, 10) to get 60k binary vectors
             train_hidden_layer = sigmoid(np.matmul(train_x, IL_to_HL_weights.T))
-
             train_hidden_layer = np.insert(train_hidden_layer, 0, 1, axis=1)
             
             train_output_layer = sigmoid(np.matmul(train_hidden_layer, HL_to_OL_weights.T))
-
+    
             train_predictions_matrix = np.array(
                 [ 
                     [ 1 if idx == np.max(np.where(row >= 0.9), initial = -1) else 0 for idx in range(10) ] 
@@ -71,9 +76,8 @@ def run_experiment(
                 train_predictions_matrix * train_y_bin
             )
             
-            # Preditction matrix obtained by matrix multiplication of test set (60k x 785) with weights (785, 10) to get 60k binary vectors
+            # Prediction matrix obtained by matrix multiplication of test set (60k x 785) with weights (785, 10) to get 60k binary vectors
             test_hidden_layer = sigmoid( np.matmul(test_x, IL_to_HL_weights.T))
-
             test_hidden_layer = np.insert(test_hidden_layer, 0, 1, axis=1)
             
             test_output_layer = sigmoid(np.matmul(test_hidden_layer, HL_to_OL_weights.T))
@@ -86,30 +90,28 @@ def run_experiment(
             )
 
             # Calculate current predictions
-        
             test_current_predictions = np.sum(
                 test_prediction_matrix * test_y_bin
             )
 
             accuracy_train = train_current_predictions / train_y_bin.shape[0]
-            #accuracy_test = test_current_predictions / test_y_bin.shape[0]
-            
             print ("Epoch {} Accuracy for Training: {}".format(epoch, accuracy_train))
-            #print ("Epoch {} Accuracy for Test: {}".format(epoch, accuracy_test ))
 
-            accuracy_vec.append((epoch, accuracy_train))
+            accuracy_test = test_current_predictions / test_y_bin.shape[0]
+            print ("Epoch {} Accuracy for Test: {}".format(epoch, accuracy_test ))
+
+            accuracy_vector.append((epoch, accuracy_train))
             
-            for train_y_vec, x_vec in zip(train_y_nn, train_x):
-        
-                
+            for train_y_vec, train_x_vec in zip(train_y_nn, train_x):
+                '''Forward Propagate'''
                 # prediction vector obtained by multipying single x vector (1 x 785) and weights (10 x 785) to get predictions
-                hidden_layer = np.array([sigmoid(val) for val in np.matmul(IL_to_HL_weights, x_vec)])
+                hidden_layer = sigmoid(np.matmul(IL_to_HL_weights, train_x_vec))
                 
-                 # Add in bias to the hidden layer
+                # Add in bias to the hidden layer
                 hidden_layer = np.insert(hidden_layer, 0, 1)
 
                 # Determine output layer
-                output_layer = np.array([sigmoid(val) for val in np.matmul(HL_to_OL_weights, hidden_layer)])
+                output_layer = sigmoid(np.matmul(HL_to_OL_weights, hidden_layer))
 
                 # Determine error for output layer
                 OL_error = output_layer * (1 - output_layer) * (train_y_vec - output_layer)
@@ -118,21 +120,22 @@ def run_experiment(
                 HL_error = hidden_layer * (1 - hidden_layer) * np.sum( HL_to_OL_weights.T * OL_error , axis = 1) 
 
                 '''Backpropagate for OL --> HL'''
+                # Update Hidden to Output Layer Weights
                 # Outer product multiplies each Hj by the error value for each output
                 # Return vector is 21 x 10 -- each row contains all outputs deltas for Hj
                 HL_to_OL_weight_delta = (
                     learning_rate*np.outer(OL_error, hidden_layer) + momentum*previous_HL_to_OL_weight_delta
                 )
-                # Update Hidden Layer Weights
                 HL_to_OL_weights += HL_to_OL_weight_delta
                 previous_HL_to_OL_weight_delta = HL_to_OL_weight_delta
 
+                # Update Input to Hidden Layer Weights
                 IL_to_HL_weight_delta = (
-                    np.outer(HL_error[1::], learning_rate*x_vec ) + momentum*previous_IL_to_HL_weight_delta
+                    np.outer(HL_error[1::], learning_rate*train_x_vec ) + momentum*previous_IL_to_HL_weight_delta
                 )
-
                 IL_to_HL_weights += IL_to_HL_weight_delta
                 previous_IL_to_HL_weight_delta = IL_to_HL_weight_delta
+            
             epoch += 1
 
         np.savetxt(
@@ -142,13 +145,14 @@ def run_experiment(
             confusion_matrix(test_y_bin, test_prediction_matrix), 
             delimiter=","
         )
-        
-        epochs = [v[0] for v in accuracy_vec]
-        training_accuracies = [v[1] for v in accuracy_vec]
-        #test_accuracies = [v[2] for v in accuracy_vec]
+
+        '''Plotting Accuracy'''
+        epochs = [v[0] for v in accuracy_vector]
+        training_accuracies = [v[1] for v in accuracy_vector]
+        test_accuracies = [v[2] for v in accuracy_vector]
 
         plt.plot(epochs, training_accuracies, label="train")
-        #plt.plot(epochs, test_accuracies, label="test")
+        plt.plot(epochs, test_accuracies, label="test")
         plt.xlabel("Epoch")
         plt.ylabel("Accuracy")
         plt.title("Neural network with learning rate = {}".format(learning_rate))
@@ -192,10 +196,8 @@ if __name__ == '__main__':
 
     # Initialize eta vector
     learning_rates = [0.001, 0.01, 0.1]
-
     momentums = [0, 0.25, 0.5]
-
-    hidden_units = [20, 50, 100]
+    hidden_units = [50, 20, 100]
 
     for h in hidden_units:
         print ("Starting experiment for : ", h)
