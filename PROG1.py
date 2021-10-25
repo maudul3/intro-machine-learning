@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 OUTPUTS = 10
 
 def sigmoid(z):
+    '''Sigmoid function which can act on entire numpy arrays'''
     return 1/( 1 + np.exp(-z) )
 
 def confusion_matrix(t, y):
@@ -25,10 +26,10 @@ def confusion_matrix(t, y):
 def run_experiment(train_x, test_x, train_y_bin, test_y_bin, learning_rate, momentum, hidden_units):
     # Modify my true values to be 0.9 and 0.1 instead of 0 and 1
     train_y_nn = np.array(
-    [
-        [ 0.9 if val == 1 else 0.1 for val in row ] 
-        for row in train_y_bin
-    ]
+        [
+            [ 0.9 if val == 1 else 0.1 for val in row ] 
+            for row in train_y_bin
+        ]
     )
 
     epoch = 0
@@ -56,6 +57,13 @@ def run_experiment(train_x, test_x, train_y_bin, test_y_bin, learning_rate, mome
 
     '''Training the neural network'''
     while (epoch <= 50):
+        # Randomly sort the training data to reduce overfitting
+        random_idx = [i for i in range(train_x.shape[0])]
+        np.random.shuffle(random_idx)
+        train_x = np.array([train_x[i] for i in random_idx])
+        train_y_nn = np.array([train_y_nn[i] for i in random_idx])
+        train_y_bin = np.array([train_y_bin[i] for i in random_idx])
+
         # Prediction matrix obtained by matrix multiplication of training set (60k x 785) with weights (785, 10) to get 60k binary vectors
         train_hidden_layer = sigmoid(np.matmul(train_x, IL_to_HL_weights.T))
         train_hidden_layer = np.insert(train_hidden_layer, 0, 1, axis=1)
@@ -74,7 +82,7 @@ def run_experiment(train_x, test_x, train_y_bin, test_y_bin, learning_rate, mome
         )
         
         # Prediction matrix obtained by matrix multiplication of test set (60k x 785) with weights (785, 10) to get 60k binary vectors
-        test_hidden_layer = sigmoid( np.matmul(test_x, IL_to_HL_weights.T))
+        test_hidden_layer = sigmoid( np.matmul(test_x, IL_to_HL_weights.T) )
         test_hidden_layer = np.insert(test_hidden_layer, 0, 1, axis=1)
         
         test_output_layer = sigmoid(np.matmul(test_hidden_layer, HL_to_OL_weights.T))
@@ -133,7 +141,7 @@ def run_experiment(train_x, test_x, train_y_bin, test_y_bin, learning_rate, mome
             IL_to_HL_weights += IL_to_HL_weight_delta
             previous_IL_to_HL_weight_delta = IL_to_HL_weight_delta
         
-    epoch += 1
+        epoch += 1
     '''Training Ends'''
 
     '''Save Confusion Matrix'''
@@ -203,7 +211,7 @@ if __name__ == '__main__':
     # Vectors to store experiment parameter information
     momentums = [0, 0.25, 0.5]
     hidden_units = [20, 50, 100]
-
+    '''
     for h in hidden_units:
         print ("Starting experiment for hidden units: ", h)
         run_experiment(
@@ -227,7 +235,7 @@ if __name__ == '__main__':
             m,
             100
         )
-
+    '''
     # Half the training data
     run_experiment(
             train_x[0:30000],
@@ -235,7 +243,7 @@ if __name__ == '__main__':
             train_y_bin[0:30000],
             test_y_bin, 
             0.1,
-            m,
+            0.9,
             100
         )
 
@@ -246,6 +254,6 @@ if __name__ == '__main__':
             train_y_bin[0:15000],
             test_y_bin, 
             0.1,
-            m,
+            0.9,
             100
         )
