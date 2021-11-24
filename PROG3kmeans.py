@@ -45,8 +45,9 @@ if __name__ == '__main__':
 
     '''K-means'''
     r = int(input("Enter the r value: "))
+    k = int(input("Enter the k value: ")) 
 
-    centroids = [Centroid() for _ in range(r)]
+    centroids = [Centroid() for _ in range(k)]
 
     data = []
     with open(
