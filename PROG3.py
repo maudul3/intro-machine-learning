@@ -34,8 +34,13 @@ class Centroid:
     def distance(self, coord):
         return (coord.x - self.mean.x)**2 + (coord.y - self.mean.y)**2
 
+    def calculate_mean_squared_error(self, data):
+        mse = 0
+        for idx in self.datapoints_idx:
+            mse += (data[idx].x - self.mean.x)**2 + (data[idx].y - self.mean.y)**2 
+        return mse
+            
         
-
 if __name__ == '__main__':
 
     '''K-means'''
@@ -52,7 +57,7 @@ if __name__ == '__main__':
             x, y = line
             data.append(Coordinate(float(x),float(y)))
     
-    for _ in range(r):
+    for iteration in range(r):
         
         for centroid in centroids:
             centroid.reset_datapoints()
@@ -67,30 +72,33 @@ if __name__ == '__main__':
                     min_idx = centroid_idx
             centroids[min_idx].datapoints_idx.append(data_idx)
         
+        total_mse = 0
         for centroid in centroids:
             centroid.calculate_new_mean(data)
+            total_mse += centroid.calculate_mean_squared_error(data)
+        
+        colors = cm.rainbow(np.linspace(0, 1, len(centroids)))
 
-colors = cm.rainbow(np.linspace(0, 1, len(centroids)))
+        for centroid_idx, (centroid, color) in enumerate(zip(centroids, colors)):
+            current_x = []
+            current_y = []
+            for data_idx in centroid.datapoints_idx:
+                current_x.append(data[data_idx].x)
+                current_y.append(data[data_idx].y)
 
-for centroid_idx, (centroid, color) in enumerate(zip(centroids, colors)):
-    current_x = []
-    current_y = []
-    for data_idx in centroid.datapoints_idx:
-        current_x.append(data[data_idx].x)
-        current_y.append(data[data_idx].y)
+            plt.scatter(x=current_x, y=current_y, label=centroid_idx, s=2, c=color)
 
-    plt.scatter(x=current_x, y=current_y, label=centroid_idx, s=2, c=color)
+        mean_x = []
+        mean_y = []
 
+        for centroid in centroids:
+            mean_x.append(centroid.mean.x)
+            mean_y.append(centroid.mean.y)
 
-mean_x = []
-mean_y = []
+        plt.scatter(x=mean_x, y=mean_y, label="means", s=12, c="black")
+        plt.title("Iteration #{} with MSE: {}".format(iteration + 1, total_mse))
 
-for centroid in centroids:
-    mean_x.append(centroid.mean.x)
-    mean_y.append(centroid.mean.y)
-
-plt.scatter(x=mean_x, y=mean_y, label="means", s=12, c="black")
-
-plt.legend()
-plt.show()
+        plt.legend()
+        plt.show()
+        plt.clf()
         
