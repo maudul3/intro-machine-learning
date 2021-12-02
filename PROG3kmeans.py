@@ -3,10 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-
 class Coordinate:
     # Coordinate class to store x,y values for gaussian coordinates and means
-
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -108,10 +106,11 @@ if __name__ == '__main__':
             mean_x.append(centroid.mean.x)
             mean_y.append(centroid.mean.y)
 
-        plt.scatter(x=mean_x, y=mean_y, label="means", s=12, c="black", marker="x")
+        plt.scatter(x=mean_x, y=mean_y, label="means", s=20, c="black", marker="x")
         plt.title("Iteration #{} with MSE: {}".format(iteration + 1, total_mse))
 
         plt.legend()
-        plt.show()
+        filename = "kmeans_{}_clusters_at_iteration_{}".format(k, iteration)
+        plt.savefig("/Users/drewmahler/Desktop/{}".format(filename))
         plt.clf()
         

@@ -69,7 +69,7 @@ class Centroid:
 if __name__ == '__main__':
 
     '''C-means'''
-    m = 3 # fuzziness parameter
+    m = 2 # fuzziness parameter
     r = int(input("Enter the r value: ")) # number of iterations
     c = int(input("Enter the c value: ")) # number of centroids
 
@@ -134,6 +134,7 @@ if __name__ == '__main__':
         plt.title("Iteration #{} with MSE: {}".format(iteration + 1, total_mse))
 
         plt.legend()
-        plt.show()
+        filename = "cmeans_{}_clusters_at_iteration_{}".format(c, iteration)
+        plt.savefig("/Users/drewmahler/Desktop/{}".format(filename))
         plt.clf()
         
