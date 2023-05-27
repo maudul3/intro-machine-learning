@@ -2,25 +2,51 @@ from random import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from pathlib import Path
+
+BASE_DIR = Path(__file__).parent
+
 
 class Coordinate:
     # Coordinate class to store x,y values for gaussian coordinates and means
     def __init__(self, x, y):
+        """Constructor
+
+        Inputs:
+            self: Coordinate object itself
+            x (float): x coordinate
+            y (float): y coordinate
+        """
         self.x = x
         self.y = y
+
 
 class Centroid:
     # Centroid class that keeps track of a mean and indexes of its datapoints
     def __init__(self):
-        self.mean = Coordinate(2*random() - 1, 2*random() - 1)
+        """Constructor
+
+        Inputs:
+            self: Centroid object itself
+        """
+        self.mean = Coordinate(2 * random() - 1, 2 * random() - 1)
         self.datapoints_idx = []
 
     def reset_datapoints(self):
-        '''Reset datapoints associated with centroid'''
+        """Reset datapoints associated with centroid
+
+        Inputs:
+            self: Centroid object itself
+        """
         self.datapoints_idx = []
 
     def calculate_new_mean(self, data):
-        '''Calculate new mean given data that is associated with centroid'''
+        """Calculate new mean given data that is associated with centroid
+
+        Inputs:
+            self: Centroid object itself
+            data (list[Coordinate]): all coordinates associated with Centroid
+        """
         sum_x = 0
         sum_y = 0
         length = len(self.datapoints_idx)
@@ -30,43 +56,54 @@ class Centroid:
             sum_y += data[idx].y
 
         if length != 0:
-            self.mean = Coordinate(sum_x/length, sum_y/length)
+            self.mean = Coordinate(sum_x / length, sum_y / length)
 
     def distance(self, coord):
-        '''Determine the distance of a coordinate from centroid mean'''
-        return (coord.x - self.mean.x)**2 + (coord.y - self.mean.y)**2
+        """Determine the distance of a coordinate from centroid mean
+
+        Inputs:
+            coord (Coordinate): coordinate object
+        """
+        return (coord.x - self.mean.x) ** 2 + (coord.y - self.mean.y) ** 2
 
     def calculate_mean_squared_error(self, data):
-        '''Calculate the mean squared error for this centroid'''
+        """Calculate the MSE for this centroid
+
+        Inputs:
+            self: Centroid object itself
+            data (list[Coordinate]): all coordinate associated with Centroid
+
+        Outputs:
+            float: mean squared error value
+        """
         mse = 0
         for idx in self.datapoints_idx:
-            mse += (data[idx].x - self.mean.x)**2 + (data[idx].y - self.mean.y)**2 
+            mse += (data[idx].x - self.mean.x) ** 2 + (data[idx].y - self.mean.y) ** 2
         return mse
-            
-        
-if __name__ == '__main__':
 
-    '''K-means'''
+
+if __name__ == "__main__":
+    """K-means"""
     r = int(input("Enter the r value: "))
-    k = int(input("Enter the k value: ")) 
+    k = int(input("Enter the k value: "))
 
-    '''Initialize a list of centroids'''
+    """Initialize a list of centroids"""
     centroids = [Centroid() for _ in range(k)]
 
-    '''Read the data into a list of coordinates'''
+    """Read the data into a list of coordinates"""
     data = []
     with open(
-        "/Users/drewmahler/Desktop/School/CS545/CS545Code/545_cluster_dataset programming 3.txt", 'r'
+        BASE_DIR / Path("cluster_dataset.txt"),
+        "r",
     ) as f:
         for line in f.readlines():
             line = line.split()
             x, y = line
-            data.append(Coordinate(float(x),float(y)))
-    
-    '''Run the k-means algorithm r times'''
+            data.append(Coordinate(float(x), float(y)))
+
+    """Run the k-means algorithm r times"""
     for iteration in range(r):
-        
-        '''At beginning of each run reset datapoints associated with centroid'''
+        """At beginning of each run reset datapoints associated with centroid"""
         for centroid in centroids:
             centroid.reset_datapoints()
 
@@ -76,17 +113,17 @@ if __name__ == '__main__':
             min_idx = -1
             for centroid_idx, centroid in enumerate(centroids):
                 distance = centroid.distance(coordinate)
-                if (distance < min_distance):
+                if distance < min_distance:
                     min_distance = distance
                     min_idx = centroid_idx
             centroids[min_idx].datapoints_idx.append(data_idx)
-        
-        # Calculate the total mean squared error 
+
+        # Calculate the total mean squared error
         total_mse = 0
         for centroid in centroids:
             centroid.calculate_new_mean(data)
             total_mse += centroid.calculate_mean_squared_error(data)
-        
+
         # Plot all of the clusters
         colors = cm.rainbow(np.linspace(0, 1, len(centroids)))
 
@@ -113,4 +150,3 @@ if __name__ == '__main__':
         filename = "kmeans_{}_clusters_at_iteration_{}".format(k, iteration)
         plt.savefig("/Users/drewmahler/Desktop/{}".format(filename))
         plt.clf()
-        
